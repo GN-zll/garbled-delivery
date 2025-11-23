@@ -1,0 +1,39 @@
+[package]
+name = "garbled-delivery"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+mpz-core = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-common = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-circuits = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-garble-core = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-garble = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-ot = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-ole = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-fields = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-share-conversion = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-memory-core = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+mpz-vm-core = { git = "https://github.com/privacy-scaling-explorations/mpz", rev = "8f2efd6" }
+
+
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["full"] }
+futures = "0.3"
+serio = { version = "0.2", features = ["codec", "bincode"] }
+uid-mux = { version = "0.1", features = ["serio"] }
+tracing = "0.1"
+anyhow = "1"
+rand = "0.9"
+
+[[bin]]
+name = "alice"
+path = "src/alice.rs"
+
+[[bin]]
+name = "bob"
+path = "src/bob.rs"
+
+[lib]
+name = "common"
+path = "src/common/mod.rs"
