@@ -28,7 +28,7 @@ Together, these components allow both theoretical study and practical experiment
 
 ## Acknowledgements
 
-I would like to thank **Lev Soukhanov** and **Yaroslav Rebenko** for their support, valuable discussions, and feedback throughout the development of this project. Their insights were instrumental in shaping both the theoretical and practical aspects of the near-guaranteed delivery protocol.
+I would like to thank **Lev Soukhanov** and **Yaroslav Rebenko** for their support, insightful discussions, and valuable feedback that contributed to the development of the near-guaranteed delivery protocol.
 
 ---
 
