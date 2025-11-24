@@ -26,6 +26,10 @@ Together, these components allow both theoretical study and practical experiment
 - **Reading the article:** Check out the `main` branch and navigate to the `article` folder.
 - **Prototyping:** Switch to the `dev` branch to explore the ongoing implementation.
 
+## Acknowledgements
+
+I would like to thank **Lev Soukhanov** and **Yaroslav Rebenko** for their support, valuable discussions, and feedback throughout the development of this project. Their insights were instrumental in shaping both the theoretical and practical aspects of the near-guaranteed delivery protocol.
+
 ---
 
 For questions or suggestions, contact the author: **Mikhail Svetlitskiy** — [minkal2sh@gmail.com](mailto:minkal2sh@gmail.com)
