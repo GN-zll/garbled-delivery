@@ -14,8 +14,6 @@ As part of this work, we developed an algorithm for transitioning from standard 
 
 ## Overview
 
-## Overview
-
 This repository presents both the theoretical and practical aspects of a near-guaranteed delivery protocol for two-party computation using garbled circuits. Key contributions and focus areas include:
 
 - **Near-Guaranteed Delivery Protocol:** A method ensuring that both parties can reliably obtain the correct result, even if one party behaves maliciously, with the computational advantage of a dishonest party strictly limited.  
