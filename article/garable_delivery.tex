@@ -1,0 +1,199 @@
+\documentclass[11pt,a4paper]{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian,english]{babel}
+
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{physics}
+\usepackage{bm}
+
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{prop}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}{Example}[section]
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+\usepackage[english]{babel} 
+\usepackage{datetime}
+
+\newdateformat{monthyear}{\monthname[\THEMONTH] \THEYEAR}
+
+
+
+\usepackage{authblk}
+\title{Near-Guaranteed Delivery in Garbled Circuits}
+\author[1]{Mikhail Svetlitskiy}
+\date{\monthyear\today} 
+
+\begin{document}
+\maketitle
+
+
+\begin{abstract}
+We propose a near-guaranteed delivery protocol for two-party computation using garbled circuits. 
+The protocol transforms the GC output into SPDZ-sharing with MACs, enabling sequential bitwise reveal with correctness checks. 
+This ensures that even if one party behaves dishonestly, its computational advantage is limited to at most doubling the effort needed to obtain the result. 
+The method works in standard 2PC settings without additional GC rounds and formalizes the steps for secure SPDZ conversion and verification.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\section{Introduction}
+\label{sec:intro}
+
+Modern secure computation protocols allow multiple parties to jointly compute functions over their private data without revealing this data to each other. One of the most well-known approaches is the \emph{garbled circuit} (GC) proposed by Yao [1]. In the two-party computation model (\emph{2-party computation}, 2PC), one party, Alice, acts as the \emph{garbler}, creating the encrypted circuit, while the other party, Bob, is the \emph{evaluator}, computing the output based on the garbled circuit.
+
+Despite the widespread adoption of GC, certain issues arise related to the guarantee of obtaining a correct result. In the classical approach, one party receives the computation result first, which creates a potential for attacks, such as publishing false values or delaying the disclosure of the result. In the context of critical applications (financial computations, distributed voting, protocols with time-sensitive responses), such situations are unacceptable.
+
+Moreover, the classical result by Fischer, Lynch, and Paterson [2] demonstrates that in distributed systems it is impossible to achieve guaranteed delivery in the presence of even a single unreliable process.
+
+This work considers an algorithm for \emph{near-guaranteed delivery} of the GC result, which provides:
+
+\begin{itemize}
+    \item protection against intentional cheating by any party;
+    \item the ability for both parties to correctly obtain the result even under partial malicious behavior;
+    \item limitation of the adversary's computational advantage to at most a twofold speedup compared to the honest party;
+\end{itemize}
+
+The algorithm consists of two logical parts:
+\begin{enumerate}
+    \item Modification of the original garbled circuit for subsequent transition to SPDZ-sharing. This allows converting the garbled output into a form suitable for stepwise disclosure and correctness verification.
+    \item A procedure for alternating disclosure of Alice's and Bob's shares, including MAC checks for verifying the integrity of each bit. This procedure ensures near-guaranteed delivery even under partial malicious behavior.
+\end{enumerate}
+
+
+
+\section{Transition from GC to SPDZ-sharing}
+\label{subsec:gc-to-spdz}
+
+Hereafter, we will abbreviate \emph{garbled circuit} as \emph{GC}. We assume that Alice acts as the \emph{garbler}, and Bob as the \emph{evaluator}. We also assume that upon completion, the original GC outputs a \emph{clear} (i.e., unencrypted) result, and Bob receives this result first.
+
+For correct subsequent value disclosure in the SPDZ phase, a series of \emph{MAC checks} is required. We will use MAC checks over bits, i.e., over the field $\mathbb{F}_2$, and apply the method described in [3], with some simplifications in the disclosure procedure due to the fact that we are in a two-party computation (2PC) model rather than general MPC.
+
+How exactly do we want to modify the original GC?  
+First, we want to return the \emph{encrypted} output of the original GC, augmented with several zeros that will later serve as a signaling mechanism to indicate that decryption was performed correctly. In addition, the modified GC should return only Bob's \emph{share} (his part) of the encrypted output, as well as his part of the MAC checks. Alice's shares are known to her in advance. To achieve this, a few additional inputs must be added.
+
+\subsection{Structure of inputs and computations within the modified GC}
+
+Let us fix a security parameter $s$. The larger it is, the more reliable the MAC checks are.
+
+\paragraph{Alice's inputs.}
+For each bit (assume there are $n$) of the original GC output, Alice randomly generates:
+\begin{itemize}
+    \item a bit string of length $s+1$, which will be her output share $[enc(x)]$;
+    \item a bit string of length $s$, which will be her MAC key share $[a]$;
+    \item a bit string of length $s+1$, which will be her output-MAC share $[xa]$.
+\end{itemize}
+All these values are provided to the modified GC.
+
+\paragraph{Bob's inputs.}
+For each bit of the original output, Bob randomly generates:
+\begin{itemize}
+    \item a bit string of length $s$, which serves as his MAC key share $[a]$;
+    \item a bit string of length $s$, representing the higher bits of his output share $[x]$ (the lower bits will be computed within the circuit).
+\end{itemize}
+The remaining necessary shares for Bob are obtained directly from the execution of the GC.
+
+\paragraph{Shared encryption key.}
+Alice and Bob agree on a symmetric encryption key known to both parties. This key is also provided to the circuit (for simplicity, assume Alice does this).
+
+\subsection{Computations within the modified GC.}
+At the beginning of execution, the modified GC fully evaluates the original GC and obtains its output $x$. The following steps are then performed:
+\begin{enumerate}
+    \item The value $x$ is padded with a specified number of zeros (indicator of correct decryption later) and encrypted using the agreed key, resulting in $enc(x)$.
+    \item SPDZ-sharing of the value $enc(x)$ is performed. For this, one least significant bit from each of Alice's bit strings for her share [enc(x)] is taken and XORed with $enc(x)$. The resulting bits form the least significant bits of Bob's share of $enc(x)$. Combining them with the bit strings provided by Bob yields for his share [enc(x)] the full share of Bob for $enc(x)$, which is returned as the circuit output.
+    \item MAC checks are computed. First, Alice's and Bob's MAC key shares provided as input are added:
+    \[
+        a = a_1 + a_2 \bmod 2^{s+1},
+    \]
+    obtaining the shared MAC key $a$.
+    \item Then the product is computed:
+    \[
+        a \cdot enc(x) \bmod 2^{s+1}.
+    \]
+    \item By subtracting Alice's output strings for her share $[xa]$ (also modulo $2^{s+1}$) from $a \cdot enc(x) \bmod 2^{s+1}$, Bob's share of $[xa]$ is obtained, which is also provided as circuit output.
+\end{enumerate}
+
+\paragraph{Result of executing the modified GC.}
+After the circuit completes:
+\begin{itemize}
+    \item Alice knows her shares of $[enc(x)]$, $[a]$, and $[xa]$, since she generated them and provided them to the GC.
+    \item Bob knows his share of $[a]$ and obtains from the GC his shares of $[enc(x)]$ and $[xa]$.
+\end{itemize}
+
+Thus, the parties transition to an SPDZ-sharing state with respect to the values $[enc(x)]$, $[a]$, and $[xa]$.
+
+An evident advantage of this approach is that Bob does not need to publish anything at this stage. Therefore, he has no opportunity to deceive Alice by providing seemingly plausible but incorrect results.
+
+\section{Revealing Alice's and Bob's Shares}
+\label{sec:reveal-shares}
+
+At this stage, we are in the SPDZ-sharing model modulo $2$ and have $n$ shared bits of the encrypted output. MAC checks for these bits have already been computed. The symmetric key is known to both Alice and Bob, so after fully revealing all bits of the encrypted output, both parties will be able to decrypt it and obtain the original result.
+
+\subsection{Algorithm Idea}
+
+The key idea of the algorithm is that Alice and Bob reveal bits alternately, checking at each step that neither party is cheating the other.
+
+\subsection{Step-by-Step Procedure}
+
+The reveal procedure is performed as follows:
+
+\begin{enumerate}
+    \item Alice publishes her share of the $i$-th bit.
+    \item Bob publishes his share of the same bit.
+    \item Correctness is verified using MAC checks: both parties reveal the corresponding $[xa]$ shares and compare them with $[x] \cdot [a]$. 
+    \begin{itemize}
+        \item If the equality holds, the algorithm proceeds to the next bit.
+        \item If the equality does not hold, it indicates that someone attempted to cheat, and the interaction is immediately terminated.
+    \end{itemize}
+\end{enumerate}
+
+Thus, bits are revealed sequentially. If no party deviates from the protocol at any step, both Alice and Bob obtain the correct result at the end of the algorithm.
+
+\subsection{Near-Guaranteed Delivery Guarantee}
+
+If at any stage one party begins to send incorrect data or stops interacting, in the best case the adversary obtains one bit of the correct output more than the honest party. Thanks to the correct-decryption indicator added earlier, the remaining suffix must be recovered via brute force, which requires twice the computational effort for the cheated party compared to the adversary. This achieves the property of \emph{near-guaranteed delivery}.
+
+\begin{thebibliography}{99}
+
+\bibitem{yao1986}
+A.~C.-C.~Yao,  
+\emph{How to Generate and Exchange Secrets},  
+in Proceedings of the 27th Annual Symposium on Foundations of Computer Science (FOCS), 1986, pp. 162--167, IEEE, doi:10.1109/SFCS.1986.25.
+
+\bibitem{FLP85}
+Michael~J.~Fischer, Nancy~A.~Lynch, Michael~S.~Paterson,  
+\emph{Impossibility of distributed consensus with one faulty process},  
+Journal of the ACM (JACM), 32(2):374--382, 1985.
+
+\bibitem{CramerDamgardEscuderoSchollXing2018}
+Ronald~Cramer, Ivan~Damgård, Daniel~Escudero, Peter~Scholl, Chaoping~Xing,  
+\emph{SPDZ2k: Efficient MPC mod \(2^k\) for Dishonest Majority},  
+Cryptology ePrint Archive, Report 2018/482, 2018.
+
+\end{thebibliography}
+
+
+\end{document}
